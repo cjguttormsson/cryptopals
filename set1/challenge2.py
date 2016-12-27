@@ -1,62 +1,44 @@
 #!/usr/bin/env python3
 
-# Cryptopals challenge, set 1
+# Cryptopals Challenge, Set 1, Challenge 2
+# CJ Guttormsson
+# 2016-12-19
 
-import base64
-import itertools
-import string
-from collections import Counter
-from math import sqrt
-from itertools import cycle
+from common import hex_to_bytes
+
+#################
+# NEW FUNCTIONS #
+#################
 
 
+def bytes_to_hex(bs: bytes) -> str:
+    """Turn a `bytes` object into its hex representation."""
+    return ''.join('{:02x}'.format(b) for b in bs)
 
 
-def single_char_decode(ciphertext):
-    """find the secret byte a string was encoded with and decode it"""
-    # First get bytes form so we can actually do stuff with it
-    ba = hex_to_bytes(ciphertext)
+def xor_bytes(bs1: bytes, bs2: bytes) -> bytes:
+    """Bitwise xor two equal-lenth `bytes` objects."""
+    return bytes(b1 ^ b2 for b1, b2 in zip(bs1, bs2))
 
-    # Iterate over every possible char and try to decipher using it
-    results = []
-    for c in string.printable:
-        try:
-            c = ord(c)
-            result = xor_bytestrings(ba, itertools.repeat(c))
-            for byte in result:
-                if chr(byte) not in string.printable:
-                    break
-            else:
-                result = result.decode('ascii')
-                results.append((english_probability(result), result))
-        except UnicodeDecodeError:
-            pass
-
-    return sorted(results, reverse=True)[0]
 
 ########
 # MAIN #
 ########
 
 
+def main():
+    input_a_hex = '1c0111001f010100061a024b53535009181c'
+    input_b_hex = '686974207468652062756c6c277320657965'
+    output_hex = '746865206b696420646f6e277420706c6179'
+
+    input_a_bytes = hex_to_bytes(input_a_hex)
+    input_b_bytes = hex_to_bytes(input_b_hex)
+
+    input_xored = xor_bytes(input_a_bytes, input_b_bytes)
+
+    assert bytes_to_hex(input_xored) == output_hex
+    print('Challenge 2 passed successfully.')
+
+
 if __name__ == '__main__':
-    # Challenge 1
-    var = ('49276d206b696c6c696e6720796f757220627261696e206c696b65206120706'
-           'f69736f6e6f7573206d757368726f6f6d')
-    print('1 -', hex_to_base64(var))
-
-    # Challenge 2
-    s1 = hex_to_bytes("1c0111001f010100061a024b53535009181c")
-    s2 = hex_to_bytes("686974207468652062756c6c277320657965")
-    result = xor_bytestrings(s1, s2)
-    print('2 -', result, bytes_to_hex(result))
-
-    # Challenge 3
-    ciphertext = ('1b37373331363f78151b7f2b783431333d78397828372d363c783'
-                  '73e783a393b3736')
-    print('3 -', single_char_decode(ciphertext)[:3])
-
-    # Challenge 4
-    plain = ("Burning 'em, if you ain't quick and nimble"
-             "\nI go crazy when I hear a cymbal")
-    print('4 -', bytes_to_hex(repeated_key_encrypt(plain, 'ICE')))
+    main()

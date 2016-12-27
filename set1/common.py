@@ -9,6 +9,8 @@ from base64 import b64encode
 from itertools import cycle
 from collections import Counter
 from math import sqrt
+import string
+import itertools
 
 #############
 # CONSTANTS #
@@ -71,10 +73,9 @@ def hex_to_bytes(s: str) -> bytes:
     return bytes.fromhex(s)
 
 
-# TODO: investigate if the `bytes` return object should be casted to a `str`
-def hex_to_base64(s: str) -> bytes:
-    """Turn a string of hex characters into a base64-encoded `bytes` object."""
-    return b64encode(hex_to_bytes(s))
+def hex_to_base64(s: str) -> str:
+    """Turn a string of hex characters into a base64-encoded string."""
+    return b64encode(hex_to_bytes(s)).decode('ascii')
 
 
 def bytes_to_hex(bs: bytes) -> str:
@@ -134,6 +135,35 @@ def english_probability(s: str) -> float:
     mag_b = sqrt(sum(freq**2 for freq in CHAR_FREQ.values()))
 
     return a_dot_b / (mag_a * mag_b)
+
+
+def single_char_decode(bs: bytes):
+    """Find the secret byte a string was encoded with and decode it."""
+
+    # Iterate over every possible char and try to decipher using it
+    results = []
+
+    for c in string.printable:
+        try:
+            # Xor the ciphertext with that character repeated, as a byte
+            result = xor_bytes(bs, itertools.repeat(ord(c)))
+
+            # Try to decode as ascii, to weed out non-text
+            result_ascii = result.decode('ascii')
+
+            # Add the result to list of possible results. The English
+            # probability comes first so that it can be sorted on.
+            results.append((english_probability(result_ascii), result_ascii))
+
+        except UnicodeDecodeError:
+            # String couldn't even be decoded, so it definitely isn't English
+            pass
+
+    # Return only the best result, if one exists
+    if len(results) > 0:
+        return sorted(results, reverse=True)[0]
+    else:
+        return (0, '')
 
 
 def guess_keysize(ciphertext: bytes) -> int:
