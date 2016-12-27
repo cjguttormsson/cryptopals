@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-# Cryptopals Challenge, Set 1, Challenge 3
+# Cryptopals Challenge, Set 1, Challenge 4
 # CJ Guttormsson
-# 2016-12-20
+# 2016-12-27
 
 from common import single_char_decode, hex_to_bytes
 
