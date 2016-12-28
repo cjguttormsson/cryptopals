@@ -23,9 +23,9 @@ def repeated_key_encrypt(plaintext: bytes, key: bytes) -> bytes:
 
 
 def main():
-    plaintext = ("Burning 'em, if you ain't quick and nimble\n"
-                 'I go crazy when I hear a cymbal').encode('ascii')
-    key = 'ICE'.encode('ascii')
+    plaintext = (b'Burning \'em, if you ain\'t quick and nimble\n'
+                 b'I go crazy when I hear a cymbal')
+    key = b'ICE'
     ciphertext = repeated_key_encrypt(plaintext, key)
 
     result_hex = ('0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d'
