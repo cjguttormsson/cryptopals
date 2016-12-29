@@ -5,7 +5,7 @@
 # the exercises. That code is centralized here so that it may be re-used by
 # other exercises without repeating it
 
-from base64 import b64encode
+from base64 import b64encode, b64decode
 from itertools import cycle
 from collections import Counter
 from math import sqrt
@@ -54,6 +54,11 @@ def bytes_to_hex(bs: bytes) -> str:
 def bytes_to_base64(bs: bytes) -> bytes:
     """Turn a `bytes` object into a base64-encoded `bytes` object."""
     return b64encode(bs)
+
+
+def base64_to_bytes(s: str) -> bytes:
+    """Turn a base64-encoded string into a decoded `bytes` object."""
+    return b64decode(s)
 
 
 ########################
