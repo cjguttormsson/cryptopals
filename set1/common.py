@@ -151,3 +151,13 @@ def guess_keysize(ciphertext: bytes) -> int:
         results.append((result, keysize))
     # return min(results)[1]
     return sorted(results)[:5]
+
+def aes_128_ecb_decrypt(data: bytes, key: bytes) -> bytes:
+    """Take a stream of encrypted bytes and decrypt them with the key."""
+    # I believe that this only works with a key of length 16
+    # TODO: Figure out if this is true
+    assert len(key) == 16
+
+    # Set up the cipher and perform the decryption. No salt or IV.
+    cipher = AES.new(key, AES.MODE_ECB)
+    return cipher.decrypt(data)
