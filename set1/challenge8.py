@@ -6,20 +6,6 @@
 
 from common import hex_to_bytes
 
-#################
-# NEW FUNCTIONS #
-#################
-
-
-def ecb_probability(ciphertext: bytes) -> float:
-    """Guess the length of the repeated key used to encrypt a ciphertext."""
-    blocks = [ciphertext[i*16:i*16+16] for i in range(len(ciphertext) // 16)]
-    result = [hamming_distance(i, j) for i, j in zip(blocks, blocks[1:])]
-    result = sum(r / 16 for r in result) / (len(ciphertext) // 16)
-    # return min(results)[1]
-    return result
-
-
 ########
 # MAIN #
 ########
