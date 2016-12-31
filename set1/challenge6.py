@@ -59,7 +59,7 @@ def guess_keysize(ciphertext: bytes) -> int:
     # return sorted(results)[:5]
 
 
-def repeating_key_decode(ciphertext: bytes) -> str:
+def repeating_key_decode(ciphertext: bytes) -> bytes:
     """Take a ciphertext encoded with an unknown key and dechiper it."""
 
     # Get the probable keysize, upon which the rest of the calculations rely

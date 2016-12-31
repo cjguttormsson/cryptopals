@@ -7,11 +7,6 @@
 from common import base64_to_bytes
 from Crypto.Cipher import AES
 
-#############
-# CONSTANTS #
-#############
-
-
 #################
 # NEW FUNCTIONS #
 #################
@@ -38,7 +33,7 @@ def main():
 
     decrypted = aes_128_ecb_decrypt(bindata, key)
 
-    # If this decoding fails, then the data was not unencrypted correctly
+    # If this decoding fails, then the data probably didn't decrypt correctly
     message = decrypted.decode('utf-8')
 
     print('Challenge 7 completed successfully.')
