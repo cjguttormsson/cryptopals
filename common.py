@@ -12,6 +12,7 @@ from math import sqrt
 import string
 import itertools
 from Crypto.Cipher import AES
+import random
 
 #############
 # CONSTANTS #
@@ -87,16 +88,33 @@ def pkcs7_pad(text: bytes, pad_len: int = 16) -> bytes:
     extra_len = (pad_len - (len(text) % pad_len)) % pad_len
     return text + bytes([extra_len] * extra_len)
 
-###################
-# OTHER UTILITIES #
-###################
 
-# TODO: set type signature to a repeated dict from one type to another
-def zip_dict(*dicts):
-    """Zip dicts by their keys and yield tuples of the corresponding values."""
-    for key in set(dicts[0]).intersection(*dicts[1:]):
-        yield tuple(d[key] for d in dicts)
+#####################
+# RANDOM ALGORITHMS #
+#####################
 
+
+def get_random_key(key_len: int = 16) -> bytes:
+    """Return a random string of bytes of length key_len, for cyptography."""
+    return bytes(random.randint(0, 255) for _ in range(key_len))
+
+
+def random_pad(data: bytes) -> bytes:
+    """Pad the data with 5-10 bytes of random data in the front and back."""
+    before = bytes(random.randint(0, 255) for _ in range(5, 10))
+    after = bytes(random.randint(0, 255) for _ in range(5, 10))
+    return before + data + after
+
+
+def random_encrypt(data: bytes) -> bytes:
+    """Randomly encrypt the data (padded randomly) with a random key."""
+    encryption_alg = random.choice([aes_128_cbc_encrypt, aes_128_ecb_encrypt])
+    return encryption_alg(random_pad(data), get_random_key())
+
+
+############
+# GUESSERS #
+############
 
 def english_probability(s: str) -> float:
     """determine the probability that a given ascii string is in english"""
@@ -114,37 +132,6 @@ def english_probability(s: str) -> float:
     mag_b = sqrt(sum(freq**2 for freq in CHAR_FREQ.values()))
 
     return a_dot_b / (mag_a * mag_b)
-
-
-def single_char_decode(bs: bytes):
-    """Find the secret byte a string was encoded with and decode it."""
-
-    # Iterate over every possible char and try to decipher using it
-    results = []
-
-    for c in string.printable:
-        try:
-            # Xor the ciphertext with that character repeated, as a byte
-            result = xor_bytes(bs, itertools.repeat(ord(c)))
-
-            # Try to decode as ascii, to weed out non-text
-            result_ascii = result.decode('ascii')
-
-            # Add the result to list of possible results. The English
-            # probability comes first so that it can be sorted on.
-            results.append(
-                (english_probability(result_ascii), result_ascii, ord(c)))
-
-        except UnicodeDecodeError:
-            # String couldn't even be decoded, so it definitely isn't English
-            pass
-
-    # Return only the best result, if one exists
-    if len(results) > 0:
-        probability, decoded_text, key = max(results)
-        return {'d': decoded_text, 'p': probability, 'k': key}
-    else:
-        return {'d': '', 'p': 0, 'k': b'\0'}
 
 
 def guess_keysize(ciphertext: bytes) -> int:
@@ -165,7 +152,21 @@ def is_ecb(data: bytes) -> bool:
     # it is likely that ECB was used to encrypt the text.
     blocks = {data[i * 16:i * 16 + 16] for i in range(len(data) // 16)}
     return len(blocks) < (len(data) // 16)
-    
+
+
+def guess_mode(alg) -> str:
+    """Guess if the given encryption algorithm is running in ECB or CBC mode"""
+    plaintext = b'e'*48
+    if is_ecb(alg(plaintext)):
+        return 'ECB'
+    else:
+        return 'CBC'
+
+
+##############
+# AES CRYPTO #
+##############
+
 
 def aes_128_ecb_decrypt(data: bytes, key: bytes) -> bytes:
     """Take a stream of encrypted bytes and decrypt them with the key."""
@@ -210,3 +211,45 @@ def aes_128_cbc_encrypt(data: bytes, key: bytes) -> bytes:
 
     # Combine encrypted block back together, ignoring the IV
     return b''.join(buf[1:])
+
+
+###################
+# OTHER UTILITIES #
+###################
+
+def zip_dict(*dicts):
+    """Zip dicts by their keys and yield tuples of the corresponding values."""
+    for key in set(dicts[0]).intersection(*dicts[1:]):
+        yield tuple(d[key] for d in dicts)
+
+
+def single_char_decode(bs: bytes):
+    """Find the secret byte a string was encoded with and decode it."""
+
+    # Iterate over every possible char and try to decipher using it
+    results = []
+
+    for c in string.printable:
+        try:
+            # Xor the ciphertext with that character repeated, as a byte
+            result = xor_bytes(bs, itertools.repeat(ord(c)))
+
+            # Try to decode as ascii, to weed out non-text
+            result_ascii = result.decode('ascii')
+
+            # Add the result to list of possible results. The English
+            # probability comes first so that it can be sorted on.
+            results.append(
+                (english_probability(result_ascii), result_ascii, ord(c)))
+
+        except UnicodeDecodeError:
+            # String couldn't even be decoded, so it definitely isn't English
+            pass
+
+    # Return only the best result, if one exists
+    if len(results) > 0:
+        probability, decoded_text, key = max(results)
+        return {'d': decoded_text, 'p': probability, 'k': key}
+    else:
+        return {'d': '', 'p': 0, 'k': b'\0'}
+
