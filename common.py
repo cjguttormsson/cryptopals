@@ -159,6 +159,14 @@ def guess_keysize(ciphertext: bytes) -> int:
     return sorted(results)[:5]
 
 
+def is_ecb(data: bytes) -> bool:
+    """Guess if the given ciphertext was encrypted in ECB mode."""
+    # Split the text into chunks. If any of those chunks are the same,
+    # it is likely that ECB was used to encrypt the text.
+    blocks = {data[i * 16:i * 16 + 16] for i in range(len(data) // 16)}
+    return len(blocks) < (len(data) // 16)
+    
+
 def aes_128_ecb_decrypt(data: bytes, key: bytes) -> bytes:
     """Take a stream of encrypted bytes and decrypt them with the key."""
     # The key must be 128 bits (16 bytes) long
@@ -171,8 +179,9 @@ def aes_128_ecb_decrypt(data: bytes, key: bytes) -> bytes:
 
 def aes_128_ecb_encrypt(data: bytes, key: bytes) -> bytes:
     """Take a stream of un-encrypted bytes and encrypt them with the key."""
-    # The key must be 128 bits (16 bytes) long
+    # Make sure the data and key are the correct lengths
     assert len(key) == 16
+    data = pkcs7_pad(data)
 
     # Set up the cipher and perform the encryption. No salt or IV.
     cipher = AES.new(key, AES.MODE_ECB)
