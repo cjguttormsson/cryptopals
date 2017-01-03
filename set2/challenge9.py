@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
-# Cryptopals Challenge, Set 1, Challenge 9
+# Cryptopals Challenge, Set 2, Challenge 9
 # CJ Guttormsson
 # 2016-12-31
 
+import sys
+sys.path.append('..')
 from common import hex_to_bytes
 
 #################
