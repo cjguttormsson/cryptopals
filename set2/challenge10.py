@@ -15,13 +15,6 @@ from Crypto.Cipher import AES
 #################
 
 
-def grouper(iterable, n, fillvalue=None):
-    "Collect data into fixed-length chunks or blocks"
-    # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
-    args = [iter(iterable)] * n
-    return zip_longest(*args, fillvalue=fillvalue)
-
-
 def aes_128_ecb_encrypt(data: bytes, key: bytes) -> bytes:
     """Take a stream of un-encrypted bytes and encrypt them with the key."""
     # The key must be 128 bits (16 bytes) long

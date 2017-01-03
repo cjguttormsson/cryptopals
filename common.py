@@ -11,6 +11,7 @@ from collections import Counter
 from math import sqrt
 import string
 import itertools
+from Crypto.Cipher import AES
 
 #############
 # CONSTANTS #
@@ -80,6 +81,11 @@ def hamming_distance(bs1: bytes, bs2: bytes) -> int:
     """Get the number of differing bits between two bytestrings."""
     return sum(N_BITS[b1 ^ b2] for b1, b2 in zip(bs1, bs2))
 
+
+def pkcs7_pad(text: bytes, pad_len: int = 16) -> bytes:
+    """Pad out some text to a multiple of pad_len bytes"""
+    extra_len = (pad_len - (len(text) % pad_len)) % pad_len
+    return text + bytes([extra_len] * extra_len)
 
 ###################
 # OTHER UTILITIES #
@@ -152,12 +158,46 @@ def guess_keysize(ciphertext: bytes) -> int:
     # return min(results)[1]
     return sorted(results)[:5]
 
+
 def aes_128_ecb_decrypt(data: bytes, key: bytes) -> bytes:
     """Take a stream of encrypted bytes and decrypt them with the key."""
-    # I believe that this only works with a key of length 16
-    # TODO: Figure out if this is true
+    # The key must be 128 bits (16 bytes) long
     assert len(key) == 16
 
     # Set up the cipher and perform the decryption. No salt or IV.
     cipher = AES.new(key, AES.MODE_ECB)
     return cipher.decrypt(data)
+
+
+def aes_128_ecb_encrypt(data: bytes, key: bytes) -> bytes:
+    """Take a stream of un-encrypted bytes and encrypt them with the key."""
+    # The key must be 128 bits (16 bytes) long
+    assert len(key) == 16
+
+    # Set up the cipher and perform the encryption. No salt or IV.
+    cipher = AES.new(key, AES.MODE_ECB)
+    return cipher.encrypt(data)
+
+
+def aes_128_cbc_decrypt(data: bytes, key: bytes) -> bytes:
+    """Decrypt a stream of cbc-encrypted bytes with the key."""
+    assert len(key) == 16
+
+    # xor each decrypted block with the previous encrypted block
+    return xor_bytes(aes_128_ecb_decrypt(data, key), (b'\0' * 16) + data[:-16])
+
+
+def aes_128_cbc_encrypt(data: bytes, key: bytes) -> bytes:
+    """Encrypt a stream of bytes with the key using block chaining."""
+    # Make sure the data and key are the correct lengths
+    assert len(key) == 16
+    data = pkcs7_pad(data)
+
+    # Create an output buffer for blocks and add to it one at a time
+    # The buffer is initialized with the IV.
+    buf = [b'\0' * 16]
+    for block in [data[i:i+16] for i in range(0, len(data), 16)]:
+        buf.append(aes_128_ecb_encrypt(xor_bytes(block, buf[-1]), key))
+
+    # Combine encrypted block back together, ignoring the IV
+    return b''.join(buf[1:])
