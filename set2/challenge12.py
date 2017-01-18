@@ -7,7 +7,7 @@
 import sys
 sys.path.append('..')
 from common import (get_random_key, base64_to_bytes, aes_128_ecb_encrypt,
-                    guess_mode)
+                    guess_mode, pkcs7_pad)
 import random
 import itertools
 from pprint import pprint
@@ -26,6 +26,7 @@ Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg
 aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq
 dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg
 YnkK""")
+
 
 #################
 # NEW FUNCTIONS #
@@ -47,36 +48,36 @@ def guess_block_length(alg) -> int:
             return new_length - last_length
 
 def guess_unknown_string(alg) -> bytes:
-    """Given the algorithm above, find the unknown data, and then the key."""
-    # This only works for ECB
+    """Given the algorithm above, find the unknown data."""
     assert guess_mode(alg) == 'ECB'
-
     block_length = guess_block_length(alg)
 
-    # Create a one-byte-short block, and fill in all possible last bytes.
-    # For each such byte, record what the first encrypted block looks like.
-    # Match this information against 
-    known_bytes = b''
-    for offset in range(0, 17):
-        # block of arbitrary data, ending with the known beginning bytes of
-        # the unknown data. If there is enough known data, then there will be
-        # no arbitrary data.
-        known_bytes_suffix = known_bytes[-16:]
-        block = bytes(max(block_length - offset - 1, 0)) + known_bytes_suffix
-        results = {}
-        # Try adding all possible bytes to the end
-        for possible_byte in (bytes([b]) for b in range(0, 256)):
-            results[alg(block + possible_byte)[:16]] = possible_byte
-        # Use the table we made to figure out which byte was correct, and add it
-        # to the list of known bytes
-        if offset < 16:
-            new_byte = results[alg(bytes(block_length - offset - 1))[:16]]
-        else:
-            new_byte = results[alg(bytes(block_length - offset - 1 + 16))[16:32]]
-        known_bytes += new_byte
-        
+    # Guess one character at a time by shifting the unknown text so that only
+    # one unknown character is in the block we are looking at
 
-    return known_bytes
+    known_bytes = b''
+    while True:
+        # figure out how much padding we need, and which block we're looking at
+        empty_block = bytes(block_length - (len(known_bytes) % 16) - 1)
+        start = (len(known_bytes) // 16) * 16
+        
+        # Create a lookup table for each possible byte (result block -> byte)
+        results = {}
+        for possible_byte in (bytes([b]) for b in range(256)):
+            result = alg(empty_block+known_bytes+possible_byte)[start:start+16]
+            results[result] = possible_byte
+
+        # Look at what the answer should be, then use that to figure out
+        # which possible byte was correct
+        expected_block = alg(empty_block)[start:start+16]
+        if expected_block in results:
+            known_bytes += results[expected_block]
+        else:
+            break
+
+    # The result seems to return an extra b'\x01' at the end for some reason
+    # TODO: investigate
+    return known_bytes[:-1]
 
     
 
@@ -96,8 +97,7 @@ def main():
     assert guess_mode(encrypt_ecb_with_unknowns) == 'ECB'
 
     # Guess the key
-    print(guess_unknown_string(encrypt_ecb_with_unknowns))
-    print(UNKNOWN_DATA[:16])
+    assert guess_unknown_string(encrypt_ecb_with_unknowns) == UNKNOWN_DATA
 
     print('Challenge 12 completed successfully.')
 
