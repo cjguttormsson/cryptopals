@@ -75,8 +75,10 @@ def guess_unknown_string(alg) -> bytes:
         else:
             break
 
-    # The result seems to return an extra b'\x01' at the end for some reason
-    # TODO: investigate
+    # We must remove the last byte, since it will always be an extraneous
+    # \x01. This happens because of pkcs7 padding (but doesn't extend to
+    # \x02 or further because that causes the \x01 to change, rendering
+    # all guessed blocks invalid).
     return known_bytes[:-1]
 
     
