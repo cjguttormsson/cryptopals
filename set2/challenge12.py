@@ -10,7 +10,6 @@ from common import (get_random_key, base64_to_bytes, aes_128_ecb_encrypt,
                     guess_mode, pkcs7_pad)
 import random
 import itertools
-from pprint import pprint
 
 
 #############
